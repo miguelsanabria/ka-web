@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# datos locales de desarrollo
+server/data
+/data/
+data/
+server/node_modules/
+*.log
+tailwindcss*.log
+tunnel/
+out/

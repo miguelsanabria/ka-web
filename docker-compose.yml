@@ -1,0 +1,93 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8091:80"
+    volumes:
+      - ./data/videos:/data/videos:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+      - NET_BIND_SERVICE
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATA_DIR: /data
+      OUT_DIR: /app/out
+      COOKIE_SECURE: "true"
+    volumes:
+      - ./data:/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{process.exit(r.ok?0:1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp
+    mem_limit: 512m
+    cpus: 2
+
+  # Respaldo a R2. Se activa con: docker compose --profile backup up -d
+  backup:
+    image: rclone/rclone:latest
+    restart: unless-stopped
+    profiles: ["backup"]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          rclone sync /data :s3:karen-aldo-backup/boda \
+            --s3-provider=Cloudflare \
+            --s3-endpoint=$${R2_ENDPOINT} \
+            --s3-access-key-id=$${R2_ACCESS_KEY} \
+            --s3-secret-access-key=$${R2_SECRET_KEY} \
+            --s3-region=auto \
+            --exclude=inbox/** \
+            --verbose=0
+          echo "backup ok $$(date)"
+          sleep 21600
+        done
+    environment:
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      R2_ACCESS_KEY: ${R2_ACCESS_KEY}
+      R2_SECRET_KEY: ${R2_SECRET_KEY}
+    volumes:
+      - ./data:/data:ro
+    networks:
+      - internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+networks:
+  internal:
+    driver: bridge

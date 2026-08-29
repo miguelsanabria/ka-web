@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="seal" cx="35%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#a3946b"/>
+      <stop offset="70%" stop-color="#7d6c4a"/>
+      <stop offset="100%" stop-color="#6a5a3d"/>
+    </radialGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#f1ede3"/>
+  <circle cx="32" cy="32" r="24" fill="url(#seal)"/>
+  <circle cx="32" cy="32" r="24" fill="none" stroke="#6a5a3d" stroke-opacity="0.4" stroke-width="1.5"/>
+  <text x="32" y="39" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="15" fill="#f8f4ec">K&#38;A</text>
+</svg>
