@@ -97,7 +97,7 @@ export const WEDDING = {
   ],
   rsvp: {
     note: "Nuestro equipo se comunicará en las próximas semanas a través de este número 3782042231 para solicitar la confirmación de su asistencia.",
-    whatsapp: "3782042231",
+    whatsapp: "523782042231",
   },
 };
 

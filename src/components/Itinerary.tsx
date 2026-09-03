@@ -41,9 +41,6 @@ export default function Itinerary() {
   return (
     <section id="itinerario" className="bg-linen py-28 sm:py-36">
       <div className="reveal mx-auto max-w-xl text-center">
-        <p className="text-[0.7rem] uppercase tracking-[0.35em] text-bronze">
-          La noche
-        </p>
         <h2 className="mt-5 font-serif text-4xl font-medium leading-tight text-charcoal sm:text-5xl">
           Itinerario
         </h2>
