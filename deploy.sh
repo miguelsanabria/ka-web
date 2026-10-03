@@ -11,7 +11,7 @@ set -euo pipefail
 
 # --- Configuración ---
 PI_HOST="df-web-01"
-PI_SSH_PORT="22"
+PI_SSH_PORT="56972"
 PI_DIR="/srv/data/ka-web"
 RSYNC="rsync -az --delete --itemize-changes"
 EXCLUDES=(
