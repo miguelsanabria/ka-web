@@ -115,11 +115,12 @@ services:
           else
             echo "WARN: fallo el sync de datos $$(date)"
           fi
-          sleep 21600
+          sleep $${BACKUP_INTERVAL}
         done
     environment:
       B2_APPLICATION_KEY_ID: ${B2_APPLICATION_KEY_ID}
       B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-3600}
     volumes:
       - ./data:/data:ro
       - ./.snapshot:/snapshot:ro

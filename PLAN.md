@@ -20,7 +20,7 @@ karen-y-aldo.com (Cloudflare DNS)
                   ├─ web     (Nginx: out/ estático + /media/videos + proxy /api)  ← único expuesto a Traefik
                   ├─ api     (Node 22 + ffmpeg: RSVP · admin · guestbook · WhatsApp)  ← red interna
                   ├─ db-snapshot (snapshot consistente de la DB, cada 1 h)
-                   ├─ backup  (rclone → Backblaze B2, cada 6 h)
+                   ├─ backup  (rclone → Backblaze B2, cada 1 h)
                   └─ /data   (bind mount df-data-01, 400 GB)
                        ├─ rsvp.sqlite   ├─ videos/   ├─ inbox/   └─ archive/
 ```
@@ -32,7 +32,7 @@ karen-y-aldo.com (Cloudflare DNS)
   recepción de uploads → `inbox/` → ffmpeg → `videos/`; auth, admin, rate limiting, webhook WhatsApp.
 - **`db-snapshot`** — `python:3-alpine`: cada 1 h toma un snapshot consistente de `rsvp.sqlite`
   con la API `backup()` de SQLite (coordina con el escritor) y lo publica en `.snapshot/`.
-- **`backup`** — `rclone/rclone`: cada 6 h sube ese snapshot con `copyto` a
+- **`backup`** — `rclone/rclone`: cada 1 h sube ese snapshot con `copyto` a
   `b2:K-A-Backup/boda/rsvp.sqlite` y sincroniza `data/` (videos) excluyendo los sqlite crudos.
 - **Endurecimiento:** non-root, `read_only: true` + `tmpfs /tmp`, `cap_drop: ALL`,
   `no-new-privileges`, límites cpu/mem, secretos solo en `.env`.
