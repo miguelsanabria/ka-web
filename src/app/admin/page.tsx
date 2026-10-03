@@ -13,6 +13,8 @@ type VideoRow = {
   tamaño: number;
   estado: string;
   creado_en: string;
+  // La API decide: los ocultos no tienen URL pública (pasan por /api/admin).
+  url: string;
 };
 
 type Invitado = {
@@ -214,7 +216,7 @@ function VideosTab() {
         {videos.map((v) => (
           <div key={v.id} className="overflow-hidden rounded-2xl border border-arena/60 bg-white">
             <video
-              src={`/media/videos/${encodeURIComponent(v.nombre_archivo)}`}
+              src={v.url}
               preload="metadata"
               controls
               playsInline

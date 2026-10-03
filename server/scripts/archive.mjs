@@ -5,6 +5,7 @@ import { execFile } from "node:child_process";
 import {
   DATA_DIR,
   VIDEOS_DIR,
+  HIDDEN_DIR,
   ARCHIVE_DIR,
   listVideos,
   listRsvp,
@@ -39,7 +40,9 @@ async function main() {
   const videos = listVideos();
   console.log(`Archivando ${videos.length} videos…`);
   for (const v of videos) {
-    const src = path.join(VIDEOS_DIR, v.nombre_archivo);
+    // Los ocultos viven en data/hidden (fuera del alcance público de nginx).
+    const dir = v.estado === "oculto" ? HIDDEN_DIR : VIDEOS_DIR;
+    const src = path.join(dir, v.nombre_archivo);
     try {
       await fs.access(src);
     } catch {

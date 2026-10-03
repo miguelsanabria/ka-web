@@ -21,6 +21,7 @@ import {
   deleteRsvp,
   VIDEOS_DIR,
   ARCHIVE_DIR,
+  HIDDEN_DIR,
 } from "../db.js";
 import { insertMessage, listMessages, getMessage, updateMessageStatus } from "../db.js";
 import { setSession, clearSession, getSession, requireAdmin } from "../auth.js";
@@ -156,26 +157,81 @@ adminRouter.get("/rsvp", (req, res) => {
 });
 
 adminRouter.get("/videos", (req, res) => {
-  res.json({ ok: true, videos: listVideos() });
+  const videos = listVideos().map((v) => ({
+    ...v,
+    // Los ocultos no tienen URL pública: pasan por la API, que exige sesión.
+    url:
+      v.estado === "oculto"
+        ? `/api/admin/videos/${v.id}/stream`
+        : `/media/videos/${encodeURIComponent(v.nombre_archivo)}`,
+  }));
+  res.json({ ok: true, videos });
 });
 
-adminRouter.patch("/videos/:id", (req, res) => {
+// nginx sirve data/hidden solo por redirect interno, así que este endpoint es la
+// única forma de ver un video oculto. requireAdmin ya está aplicado arriba.
+adminRouter.get("/videos/:id/stream", (req, res) => {
+  const v = getVideo(Number(req.params.id));
+  if (!v) return res.status(404).json({ error: "No existe" });
+  // Un nombre de archivo con CR/LF rompería la cabecera de redirect.
+  if (/[\r\n/]/.test(v.nombre_archivo)) {
+    return res.status(400).json({ error: "Nombre de archivo inválido" });
+  }
+  if (v.estado !== "oculto") {
+    return res.redirect(`/media/videos/${encodeURIComponent(v.nombre_archivo)}`);
+  }
+  const p = path.join(HIDDEN_DIR, v.nombre_archivo);
+  if (!existsSync(p)) return res.status(404).json({ error: "Archivo no encontrado" });
+  res.setHeader("X-Accel-Redirect", `/media/private/${v.nombre_archivo}`);
+  res.status(200).end();
+});
+
+// Mueve el archivo entre data/videos (público) y data/hidden (no público).
+// El estado de la base y la ubicación del archivo se cambian juntos: si el
+// archivo se queda en data/videos con estado "oculto", nginx lo seguiría
+// sirviendo por URL.
+async function moveVideoFile(v, toHidden) {
+  const [from, to] = toHidden
+    ? [path.join(VIDEOS_DIR, v.nombre_archivo), path.join(HIDDEN_DIR, v.nombre_archivo)]
+    : [path.join(HIDDEN_DIR, v.nombre_archivo), path.join(VIDEOS_DIR, v.nombre_archivo)];
+  try {
+    await fs.rename(from, to);
+  } catch (e) {
+    // Si el archivo no está en el origen, puede que ya esté en el destino (se
+    // reintentó la misma operación) o que se perdiera; en ambos casos manda el
+    // estado de la base y no conviene bloquear la operación.
+    if (e.code !== "ENOENT") throw e;
+    console.warn(`[videos] ${v.nombre_archivo} no estaba en ${from}`);
+  }
+}
+
+adminRouter.patch("/videos/:id", async (req, res) => {
   const id = Number(req.params.id);
   const { estado } = req.body || {};
   if (!["visible", "oculto"].includes(estado)) {
     return res.status(400).json({ error: "Estado inválido" });
   }
-  if (!getVideo(id)) return res.status(404).json({ error: "No existe" });
+  const v = getVideo(id);
+  if (!v) return res.status(404).json({ error: "No existe" });
+  try {
+    await moveVideoFile(v, estado === "oculto");
+  } catch (e) {
+    console.error("[videos] no se pudo mover el archivo", e);
+    return res.status(500).json({ error: "No se pudo cambiar el estado del video" });
+  }
   setVideoEstado(id, estado);
   res.json({ ok: true });
 });
 
-adminRouter.delete("/videos/:id", (req, res) => {
+adminRouter.delete("/videos/:id", async (req, res) => {
   const id = Number(req.params.id);
   const v = getVideo(id);
   if (!v) return res.status(404).json({ error: "No existe" });
-  const p = path.join(VIDEOS_DIR, v.nombre_archivo);
-  if (existsSync(p)) fs.unlink(p).catch(() => {});
+  // Puede estar en cualquiera de los dos directorios según su estado.
+  for (const dir of [VIDEOS_DIR, HIDDEN_DIR]) {
+    const p = path.join(dir, v.nombre_archivo);
+    if (existsSync(p)) await fs.unlink(p).catch(() => {});
+  }
   deleteVideo(id);
   res.json({ ok: true });
 });

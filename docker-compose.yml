@@ -8,6 +8,8 @@ services:
       - "8091:80"
     volumes:
       - ./data/videos:/data/videos:ro
+      # Los ocultos: los sirve nginx solo por redirect interno (location internal).
+      - ./data/hidden:/data/hidden:ro
     depends_on:
       api:
         condition: service_healthy

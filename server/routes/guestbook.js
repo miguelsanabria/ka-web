@@ -69,14 +69,18 @@ guestbookRouter.post(
         return res.status(507).json({ error: "Almacenamiento casi lleno" });
       }
 
+      const name = `video-${Date.now()}-${randomUUID().slice(0, 6)}.mp4`;
+      const outPath = path.join(VIDEOS_DIR, name);
+
       validateVideoFile(file)
-        .catch(() => {
+        .catch((e) => {
           fs.unlink(file.path).catch(() => {});
-          throw new Error("Video no válido");
+          // Los errores de validación (status 400) llevan un mensaje pensado
+          // para el invitado ("video demasiado largo", etc.). Los de ffprobe no
+          // lo tienen: ahí el detalle es técnico y no se muestra.
+          throw e.status === 400 ? e : new Error("Video no válido o corrupto");
         })
         .then(() => {
-          const name = `video-${Date.now()}-${randomUUID().slice(0, 6)}.mp4`;
-          const outPath = path.join(VIDEOS_DIR, name);
           const job = transcodeQueue.then(() =>
             transcodeToMp4(file.path, outPath)
           );
@@ -93,8 +97,15 @@ guestbookRouter.post(
           });
         })
         .catch((e) => {
+          // Un transcodificado fallido deja un .mp4 a medio escribir que nginx
+          // serviría igual. Se borra lo que se haya quedado.
           if (existsSync(file.path)) fs.unlink(file.path).catch(() => {});
-          res.status(400).json({ error: e.message || "Error procesando video" });
+          if (existsSync(outPath)) fs.unlink(outPath).catch(() => {});
+          console.error("[upload]", e);
+          const validation = e.status === 400;
+          res.status(validation ? 400 : 500).json({
+            error: validation ? e.message : "No se pudo procesar el video",
+          });
         });
     });
   }

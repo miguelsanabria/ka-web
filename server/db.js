@@ -11,13 +11,22 @@ export const DATA_DIR = process.env.DATA_DIR || path.resolve(process.cwd(), "dat
 export const VIDEOS_DIR = path.join(DATA_DIR, "videos");
 export const INBOX_DIR = path.join(DATA_DIR, "inbox");
 export const ARCHIVE_DIR = path.join(DATA_DIR, "archive");
+// Los videos que el admin oculta se mueven aquí. No pueden quedarse en
+// VIDEOS_DIR porque nginx sirve ese directorio por URL sin mirar la base de
+// datos: mientras el archivo esté ahí, "oculto" no significaría nada.
+export const HIDDEN_DIR = path.join(DATA_DIR, "hidden");
 export const DB_PATH = path.join(DATA_DIR, "rsvp.sqlite");
 
 export const UPLOADS_ENABLED = (process.env.UPLOADS_ENABLED ?? "true") === "true";
 export const VIDEO_MAX_MB = Number(process.env.VIDEO_MAX_MB || 200);
 export const MIN_DISK_MB = Number(process.env.MIN_DISK_MB || 1024);
+// Tope de duración y de resolución de lo que se acepta subir. Sin esto, un
+// video enorme puede agotar la memoria del contenedor api (2 GB), tumbarlo y
+// reiniciarlo: el OOM de ffmpeg mata el proceso Node que sirve el sitio.
+export const VIDEO_MAX_SECONDS = Number(process.env.VIDEO_MAX_SECONDS || 600);
+export const VIDEO_MAX_PIXELS = Number(process.env.VIDEO_MAX_PIXELS || 3840 * 2160);
 
-for (const dir of [VIDEOS_DIR, INBOX_DIR, ARCHIVE_DIR]) {
+for (const dir of [VIDEOS_DIR, INBOX_DIR, ARCHIVE_DIR, HIDDEN_DIR]) {
   mkdirSync(dir, { recursive: true });
 }
 
