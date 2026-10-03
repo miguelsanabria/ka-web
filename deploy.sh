@@ -1,6 +1,6 @@
 #!/bin/bash
 # =====================================================================
-# Deploy karen-y-aldo.com a df-app-01 (compila en Mac, sirve en Pi)
+# Deploy karen-y-aldo.com a df-web-01 (compila en Mac, sirve en df-web-01)
 #
 # Uso:
 #   ./deploy.sh          # build + sync + rebuild docker
@@ -10,8 +10,9 @@
 set -euo pipefail
 
 # --- Configuración ---
-PI_HOST="df-app-01"
-PI_DIR="/mnt/data/ka-web"
+PI_HOST="df-web-01"
+PI_SSH_PORT="22"
+PI_DIR="/srv/data/ka-web"
 RSYNC="rsync -az --delete --itemize-changes"
 EXCLUDES=(
   --exclude='.git'
@@ -22,6 +23,7 @@ EXCLUDES=(
   --exclude='.env'
   --exclude='*.log'
   --exclude='.DS_Store'
+  --exclude='tsconfig.tsbuildinfo'
 )
 WEB_ONLY=false
 SKIP_BUILD=false
@@ -51,24 +53,25 @@ fi
 echo ""
 echo "📤 2/4 Sincronizando a $PI_HOST..."
 $RSYNC "${EXCLUDES[@]}" \
-  -e "ssh -p 56972" \
+  -e "ssh -p $PI_SSH_PORT" \
   "$(dirname "$0")/" \
   "$PI_HOST:$PI_DIR/"
 
 # 3. Rebuild docker (solo web, o web + api)
 echo ""
 echo "🛠️  3/4 Reconstruyendo contenedores..."
+SSH="ssh -p $PI_SSH_PORT $PI_HOST"
 if [ "$WEB_ONLY" = true ]; then
   echo "    (solo web)"
-  ssh "$PI_HOST" "cd $PI_DIR && docker compose build web && docker compose up -d web"
+  $SSH "cd $PI_DIR && docker compose build web && docker compose up -d web"
 else
-  ssh "$PI_HOST" "cd $PI_DIR && docker compose build web api && docker compose up -d web api"
+  $SSH "cd $PI_DIR && docker compose build web api && docker compose up -d web api"
 fi
 
 # 4. Verificación
 echo ""
 echo "✅ 4/4 Verificando..."
-ssh "$PI_HOST" "docker compose -f $PI_DIR/docker-compose.yml ps --format 'table {{.Name}}\t{{.Status}}'"
+$SSH "docker compose -f $PI_DIR/docker-compose.yml ps --format 'table {{.Name}}\t{{.Status}}'"
 echo ""
 echo "🔗 Sitio: https://karen-y-aldo.com"
 echo "   (la caché DNS puede tardar unos segundos en refrescarse)"
