@@ -16,6 +16,12 @@ copiar el archivo a mano, coordina con el escritor y garantiza una copia consist
 Luego renombra con `os.replace()`, que es atomico, para que el contenedor de
 backup nunca llegue a leer un snapshot a medio escribir.
 
+La conexion de origen se abre en modo lectura-escritura a proposito. La base esta
+en modo WAL, y SQLite necesita crear o abrir el archivo `-shm` acompanante en el
+mismo directorio; con un montaje `:ro` (o con `mode=ro`) falla con SQLITE_CANTOPEN
+en cuanto la API esta detenida y no hay ningun `-shm` en disco. `backup()` solo
+lee del origen, asi que abrirlo en rw no modifica nada.
+
 Se ejecuta en bucle (cada SNAPSHOT_INTERVAL segundos) dentro del contenedor
 `db-snapshot`. Escribe en SNAPSHOT_DIR, que el contenedor `backup` lee en :ro.
 """
@@ -40,7 +46,9 @@ def snapshot() -> None:
         if os.path.exists(path):
             os.remove(path)
 
-    src = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    # Abrir en rw (no mode=ro): SQLite necesita el -shm de una base en WAL,
+    # que solo puede crear/acceder si el directorio es escribible.
+    src = sqlite3.connect(DB_PATH)
     try:
         dst = sqlite3.connect(tmp)
         try:

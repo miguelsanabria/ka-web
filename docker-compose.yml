@@ -68,7 +68,9 @@ services:
       SNAPSHOT_DIR: /snapshot
       SNAPSHOT_INTERVAL: "3600"
     volumes:
-      - ./data:/data:ro
+      # rw a proposito: una base en WAL necesita escribir/acceder su -shm.
+      # El script solo lee del origen.
+      - ./data:/data
       - ./.snapshot:/snapshot
       - ./server/scripts:/scripts:ro
     networks:
