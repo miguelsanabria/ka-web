@@ -55,7 +55,7 @@ services:
     mem_limit: 2g
     cpus: 8
 
-  # Respaldo a R2. Se activa con: docker compose --profile backup up -d
+  # Respaldo a Backblaze B2. Se activa con: docker compose --profile backup up -d
   backup:
     image: rclone/rclone:latest
     restart: unless-stopped
@@ -64,21 +64,17 @@ services:
     command:
       - |
         while true; do
-          rclone sync /data :s3:karen-aldo-backup/boda \
-            --s3-provider=Cloudflare \
-            --s3-endpoint=$${R2_ENDPOINT} \
-            --s3-access-key-id=$${R2_ACCESS_KEY} \
-            --s3-secret-access-key=$${R2_SECRET_KEY} \
-            --s3-region=auto \
+          rclone sync /data :b2:K-A-Backup/boda \
+            --b2-account=$${B2_APPLICATION_KEY_ID} \
+            --b2-key=$${B2_APPLICATION_KEY} \
             --exclude=inbox/** \
             --verbose=0
           echo "backup ok $$(date)"
           sleep 21600
         done
     environment:
-      R2_ENDPOINT: ${R2_ENDPOINT}
-      R2_ACCESS_KEY: ${R2_ACCESS_KEY}
-      R2_SECRET_KEY: ${R2_SECRET_KEY}
+      B2_APPLICATION_KEY_ID: ${B2_APPLICATION_KEY_ID}
+      B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
     volumes:
       - ./data:/data:ro
     networks:
