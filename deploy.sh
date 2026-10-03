@@ -20,10 +20,12 @@ EXCLUDES=(
   --exclude='.next'
   --exclude='server/node_modules'
   --exclude='data'
+  --exclude='.snapshot'
   --exclude='.env'
   --exclude='*.log'
   --exclude='.DS_Store'
   --exclude='tsconfig.tsbuildinfo'
+  --exclude='__pycache__'
 )
 WEB_ONLY=false
 SKIP_BUILD=false

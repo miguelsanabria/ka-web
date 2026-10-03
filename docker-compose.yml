@@ -55,6 +55,29 @@ services:
     mem_limit: 2g
     cpus: 8
 
+  # Snapshot consistente de la DB. Alimenta al servicio `backup` de abajo.
+  # Se activa con el mismo perfil: docker compose --profile backup up -d
+  db-snapshot:
+    image: python:3-alpine
+    restart: unless-stopped
+    profiles: ["backup"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["python /scripts/db-snapshot.py"]
+    environment:
+      KA_DB: /data/rsvp.sqlite
+      SNAPSHOT_DIR: /snapshot
+      SNAPSHOT_INTERVAL: "3600"
+    volumes:
+      - ./data:/data:ro
+      - ./.snapshot:/snapshot
+      - ./server/scripts:/scripts:ro
+    networks:
+      - internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
   # Respaldo a Backblaze B2. Se activa con: docker compose --profile backup up -d
   backup:
     image: rclone/rclone:latest
@@ -64,12 +87,32 @@ services:
     command:
       - |
         while true; do
-          rclone sync /data :b2:K-A-Backup/boda \
+          # 1) DB: se sube el snapshot consistente, no el archivo crudo.
+          #    Si aun no hay snapshot, se conserva la copia previa en B2.
+          if [ -f /snapshot/rsvp.sqlite ]; then
+            rclone copyto /snapshot/rsvp.sqlite :b2:K-A-Backup/boda/rsvp.sqlite \
+              --b2-account=$${B2_APPLICATION_KEY_ID} \
+              --b2-key=$${B2_APPLICATION_KEY} \
+              --verbose=0 \
+              || echo "WARN: no se pudo subir el snapshot de la DB"
+          else
+            echo "WARN: sin snapshot todavia; se conserva la copia previa de la DB"
+          fi
+          # 2) Resto de datos (videos). SQLite queda excluido a propósito: el
+          #    snapshot del paso 1 es la copia buena y `sync` podría pisarla.
+          if rclone sync /data :b2:K-A-Backup/boda \
             --b2-account=$${B2_APPLICATION_KEY_ID} \
             --b2-key=$${B2_APPLICATION_KEY} \
-            --exclude=inbox/** \
+            --exclude='inbox/**' \
+            --exclude='rsvp.sqlite' \
+            --exclude='rsvp.sqlite-shm' \
+            --exclude='rsvp.sqlite-wal' \
             --verbose=0
-          echo "backup ok $$(date)"
+          then
+            echo "backup ok $$(date)"
+          else
+            echo "WARN: fallo el sync de datos $$(date)"
+          fi
           sleep 21600
         done
     environment:
@@ -77,6 +120,7 @@ services:
       B2_APPLICATION_KEY: ${B2_APPLICATION_KEY}
     volumes:
       - ./data:/data:ro
+      - ./.snapshot:/snapshot:ro
     networks:
       - internal
     security_opt:

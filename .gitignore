@@ -49,3 +49,10 @@ server/node_modules/
 tailwindcss*.log
 tunnel/
 out/
+
+# snapshot consistente de la DB que genera el contenedor db-snapshot
+/.snapshot/
+
+# python
+__pycache__/
+*.pyc
