@@ -19,7 +19,8 @@ karen-y-aldo.com (Cloudflare DNS)
              └─ df-apps-01 → docker-compose:
                   ├─ web     (Nginx: out/ estático + /media/videos + proxy /api)  ← único expuesto a Traefik
                   ├─ api     (Node 22 + ffmpeg: RSVP · admin · guestbook · WhatsApp)  ← red interna
-                  ├─ backup  (rclone → Backblaze B2, cron diario)
+                  ├─ db-snapshot (snapshot consistente de la DB, cada 1 h)
+                   ├─ backup  (rclone → Backblaze B2, cada 6 h)
                   └─ /data   (bind mount df-data-01, 400 GB)
                        ├─ rsvp.sqlite   ├─ videos/   ├─ inbox/   └─ archive/
 ```
@@ -29,7 +30,10 @@ karen-y-aldo.com (Cloudflare DNS)
   sirve `/media/videos` (MP4 progresivo), proxya `/api` y `/webhook` → `api:3000`.
 - **`api`** — `node:24-alpine` + `ffmpeg`: Express; SQLite con `node:sqlite` (integrado);
   recepción de uploads → `inbox/` → ffmpeg → `videos/`; auth, admin, rate limiting, webhook WhatsApp.
-- **`backup`** — `rclone/rclone`: `rclone sync /data → r2://bucket/karen-aldo` vía cron diario.
+- **`db-snapshot`** — `python:3-alpine`: cada 1 h toma un snapshot consistente de `rsvp.sqlite`
+  con la API `backup()` de SQLite (coordina con el escritor) y lo publica en `.snapshot/`.
+- **`backup`** — `rclone/rclone`: cada 6 h sube ese snapshot con `copyto` a
+  `b2:K-A-Backup/boda/rsvp.sqlite` y sincroniza `data/` (videos) excluyendo los sqlite crudos.
 - **Endurecimiento:** non-root, `read_only: true` + `tmpfs /tmp`, `cap_drop: ALL`,
   `no-new-privileges`, límites cpu/mem, secretos solo en `.env`.
 
