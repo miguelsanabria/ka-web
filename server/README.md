@@ -57,4 +57,4 @@ Consideraciones de seguridad
 
 Soporte y contactos
 
-- Operaciones en DataFarm: acceso SSH a `df-app-01`, `df-edge-01`, `df-data-01`, `df-mgmt-01`.
+- Operaciones en DataFarm: acceso SSH a `df-web-01`, `df-edge-01`, `df-data-01`, `df-mgmt-01`.
