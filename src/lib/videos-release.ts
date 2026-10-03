@@ -8,12 +8,15 @@ export function videosActive(): boolean {
 }
 
 /**
- * Modo de prueba: `?preview=videos` en la URL activa la sección sin importar la fecha.
- * Sirve para ensayar el muro antes del 7 de noviembre.
+ * Modo de prueba: `?preview=videos` o `#preview=videos` en la URL activa la
+ * sección sin importar la fecha. Sirve para ensayar el muro antes del 7 de
+ * noviembre. El hash (#) no se pierde por caché ni redirecciones.
  */
 export function videosPreview(): boolean {
   if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get("preview") === "videos";
+  const q = new URLSearchParams(window.location.search).get("preview");
+  const h = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("preview");
+  return q === "videos" || h === "videos";
 }
 
 /** ¿La sección debe mostrarse? (publicada o en preview de prueba) */
