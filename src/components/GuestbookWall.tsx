@@ -41,7 +41,22 @@ export default function GuestbookWall() {
     );
   }
 
-  if (videos.length === 0) return null;
+  if (videos.length === 0) {
+    return (
+      <div className="mx-auto max-w-5xl px-6">
+        <div className="rounded-2xl border border-dashed border-bronze/40 bg-white/60 px-8 py-14 text-center">
+          <p className="font-script text-3xl text-bronze">Aún no hay videos</p>
+          <p className="mx-auto mt-3 max-w-sm text-sm font-light leading-relaxed text-charcoal-soft">
+            Sé el primero: graba desde{" "}
+            <a href="/grabar" className="font-medium text-bronze underline underline-offset-4">
+              /grabar
+            </a>{" "}
+            o escanea el QR. Los nuevos aparecen aquí solos.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-6">
