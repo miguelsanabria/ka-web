@@ -3,16 +3,14 @@
 import { useEffect, useState } from "react";
 import GuestbookWall from "@/components/GuestbookWall";
 import VideoQr from "@/components/VideoQr";
-import { WEDDING } from "@/lib/data";
+import { videosVisible } from "@/lib/videos-release";
 
 export default function VideosSection() {
   const [active, setActive] = useState(false);
 
   useEffect(() => {
-    const now = new Date();
-    // Mostrar sección a partir del 7 de noviembre (inicio del día)
-    const release = new Date("2026-11-07T00:00:00");
-    if (now >= release) setActive(true);
+    // Publica el 7 de noviembre a las 16:00 hrs; ?preview=videos la muestra antes para pruebas.
+    if (videosVisible()) setActive(true);
   }, []);
 
   if (!active) return null;

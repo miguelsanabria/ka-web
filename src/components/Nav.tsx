@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { videosVisible } from "@/lib/videos-release";
 
 const links = [
   { href: "#ceremonia", label: "Ceremonia" },
@@ -13,7 +14,12 @@ const links = [
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
-  const showVideos = new Date() >= new Date("2026-11-07T00:00:00");
+  const [showVideos, setShowVideos] = useState(false);
+
+  useEffect(() => {
+    // Publica el 7 de noviembre a las 16:00 hrs; ?preview=videos lo muestra antes para pruebas.
+    if (videosVisible()) setShowVideos(true);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);

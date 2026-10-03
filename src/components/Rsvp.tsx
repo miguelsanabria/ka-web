@@ -13,9 +13,8 @@ export default function Rsvp() {
           {WEDDING.rsvp.note}
         </p>
         <a
-          href={`https://wa.me/${WEDDING.rsvp.whatsapp}?text=${encodeURIComponent("Confirmado")}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href="/boda-karen-aldo.vcf"
+          download="Boda Karen + Aldo.vcf"
           className="mt-8 inline-flex items-center gap-3 rounded-full border border-gold/60 bg-gold/10 px-8 py-4 text-sm font-medium tracking-[0.2em] text-cream transition-all duration-300 hover:bg-gold hover:text-charcoal"
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden>
@@ -23,6 +22,9 @@ export default function Rsvp() {
           </svg>
           {WEDDING.rsvp.whatsapp}
         </a>
+        <p className="mt-3 text-[0.7rem] uppercase tracking-[0.25em] text-cream/60">
+          Guardar como contacto "Boda Karen + Aldo"
+        </p>
         <p className="mt-6 text-xs font-light uppercase tracking-[0.25em] text-cream/60">
           ¡Esperamos contar con su presencia!
         </p>
