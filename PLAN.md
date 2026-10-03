@@ -9,7 +9,7 @@ Sitio de boda servido desde el homelab con:
 - Video guestbook para el iPad (cámara nativa + QR), convertido a MP4
 - Muro público de videos en vivo
 - Panel de administración con moderación, seguimiento de invitados y archivado post-boda
-- Respaldo off-site en Cloudflare R2
+- Respaldo off-site en Backblaze B2
 
 ## 2. Arquitectura
 ```
@@ -19,7 +19,7 @@ karen-y-aldo.com (Cloudflare DNS)
              └─ df-apps-01 → docker-compose:
                   ├─ web     (Nginx: out/ estático + /media/videos + proxy /api)  ← único expuesto a Traefik
                   ├─ api     (Node 22 + ffmpeg: RSVP · admin · guestbook · WhatsApp)  ← red interna
-                  ├─ backup  (rclone → R2, cron diario)
+                  ├─ backup  (rclone → Backblaze B2, cron diario)
                   └─ /data   (bind mount df-data-01, 400 GB)
                        ├─ rsvp.sqlite   ├─ videos/   ├─ inbox/   └─ archive/
 ```
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS invitados (
 ## 8. Seguridad
 Non-root · Nginx único punto expuesto · ffmpeg aislado del proxy · rate limiting ·
 sanitización + `ffprobe` · guardia de disco · `.env` con `ADMIN_PASSWORD` (bcrypt) y `SECRET` ·
-firma de webhook · respaldo R2.
+firma de webhook · respaldo Backblaze B2.
 
 ## 9. Archivado post-boda
 `server/scripts/archive.mjs` (botón en `/admin` o `docker exec`): transcoda todo a MP4 de archivo

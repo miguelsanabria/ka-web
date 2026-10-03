@@ -5,7 +5,7 @@
 ## 1. Honorarios de desarrollo (pago único)
 
 Alcance: sitio completo + RSVP en SQLite + video guestbook (iPad/QR/MP4) +
-integración WhatsApp Business + panel admin (moderación/archivo) + backup R2 +
+integración WhatsApp Business + panel admin (moderación/archivo) + backup Backblaze B2 +
 despliegue en homelab (Docker/Traefik/Cloudflare Tunnel).
 
 | Modalidad | Monto propuesto |
@@ -19,7 +19,7 @@ despliegue en homelab (Docker/Traefik/Cloudflare Tunnel).
 
 | Etapa | Periodicidad | Monto propuesto |
 |---|---|---|
-| Mantenimiento/monitoreo (backups R2, actualizaciones, uptime, moderación de videos) | Mensual | **MXN 1,500–3,000/mes** (USD ~85–170) |
+| Mantenimiento/monitoreo (backups Backblaze B2, actualizaciones, uptime, moderación de videos) | Mensual | **MXN 1,500–3,000/mes** (USD ~85–170) |
 | Cobertura día de la boda (soporte iPad, envío de invitaciones, muro y confirmaciones) | 1 evento | **MXN 3,000–5,000** |
 | Post-boda (archivo ZIP + exportación RSVP + teardown/entrega) | 1 vez | **MXN 1,500–2,500** |
 
@@ -29,7 +29,7 @@ despliegue en homelab (Docker/Traefik/Cloudflare Tunnel).
 |---|---|
 | Dominio `karen-y-aldo.com` | ~$12 USD/año |
 | WhatsApp Business API (150–200 grupos + follow-ups) | ~$10–20 USD |
-| Respaldo R2 (400 GB × ~$0.015/GB-mes) | ~$6 USD/mes |
+| Respaldo Backblaze B2 (400 GB × ~$0.015/GB-mes) | ~$6 USD/mes |
 | Homelab, Cloudflare (DNS/Tunnel), SSL, software | $0 |
 
 ## 4. Cronograma de pagos propuesto
@@ -50,5 +50,5 @@ despliegue en homelab (Docker/Traefik/Cloudflare Tunnel).
 
 ## Notas
 - Montos marcados como rangos son **ajustables** hasta confirmación.
-- El respaldo R2 se puede detener después de la boda (se archiva el ZIP en disco).
+- El respaldo Backblaze B2 se puede detener después de la boda (se archiva el ZIP en disco).
 - No incluye: impuestos, transcodificación pesada adicional ni soporte de terceros.
