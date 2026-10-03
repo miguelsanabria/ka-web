@@ -31,8 +31,26 @@ import { fileSizeMb } from "../ffmpeg.js";
 
 export const adminRouter = Router();
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "changeme";
-const ADMIN_HASH = bcrypt.hashSync(ADMIN_PASSWORD, 10);
+// Sin ADMIN_PASSWORD real el panel quedaría abierto con "changeme", un valor
+// que está en un repo público. En producción, mejor no arrancar.
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+if (!ADMIN_PASSWORD || ADMIN_PASSWORD === "changeme") {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("ADMIN_PASSWORD no definido o con valor de ejemplo (ver .env)");
+  }
+  console.warn("[admin] AVISO: usando ADMIN_PASSWORD de ejemplo, solo para desarrollo");
+}
+const ADMIN_HASH = bcrypt.hashSync(ADMIN_PASSWORD || "changeme", 10);
+
+// Neutraliza fórmulas: si una celda empieza por = + - @ el navegador la
+// evalúa como fórmula al abrir el CSV (Robbins, CVE-2024-...); con RSVP abierto
+// cualquiera controla el texto de la columna `nombre`.
+function csvCell(value) {
+  if (value === null || value === undefined) return "";
+  let s = String(value);
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return `"${s.replace(/"/g, '""')}"`;
+}
 
 function buildInviteCaption(nombre, personas, enlace) {
   const esIndividual = personas === 1;
@@ -207,17 +225,23 @@ adminRouter.patch("/invitados/:id", (req, res) => {
 adminRouter.get("/invitados/export", (req, res) => {
   const rows = listInvitados();
   const header = "id,nombre,whatsapp,personas,grupo,estado,token,ultimo_envio,creado_en\n";
-  const csv = header + rows.map((r) => [
-    r.id,
-    `"${String(r.nombre).replace(/"/g, '""')}"`,
-    r.whatsapp,
-    r.personas,
-    r.grupo ? `"${String(r.grupo).replace(/"/g, '""')}"` : "",
-    r.estado,
-    r.token,
-    r.ultimo_envio || "",
-    r.creado_en || "",
-  ].join(",")).join("\n");
+  const csv =
+    header +
+    rows
+      .map((r) =>
+        [
+          r.id,
+          csvCell(r.nombre),
+          csvCell(r.whatsapp),
+          r.personas,
+          csvCell(r.grupo),
+          csvCell(r.estado),
+          csvCell(r.token),
+          csvCell(r.ultimo_envio),
+          csvCell(r.creado_en),
+        ].join(",")
+      )
+      .join("\n");
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="invitados.csv"');
   res.send(csv);
@@ -226,15 +250,21 @@ adminRouter.get("/invitados/export", (req, res) => {
 adminRouter.get("/rsvp/export", (req, res) => {
   const rows = listRsvp();
   const header = "id,nombre,personas,asistencia,mensaje,invitado_id,creado_en\n";
-  const csv = header + rows.map((r) => [
-    r.id,
-    `"${String(r.nombre).replace(/"/g, '""')}"`,
-    r.personas,
-    r.asistencia,
-    r.mensaje ? `"${String(r.mensaje).replace(/"/g, '""')}"` : "",
-    r.invitado_id ?? "",
-    r.creado_en || "",
-  ].join(",")).join("\n");
+  const csv =
+    header +
+    rows
+      .map((r) =>
+        [
+          r.id,
+          csvCell(r.nombre),
+          r.personas,
+          csvCell(r.asistencia),
+          csvCell(r.mensaje),
+          r.invitado_id ?? "",
+          csvCell(r.creado_en),
+        ].join(",")
+      )
+      .join("\n");
   res.setHeader("Content-Type", "text/csv; charset=utf-8");
   res.setHeader("Content-Disposition", 'attachment; filename="rsvp.csv"');
   res.send(csv);
@@ -251,7 +281,7 @@ adminRouter.get("/invitacion-preview/:token", (req, res) => {
   const inv = listInvitados().find((i) => i.token === token);
   if (!inv) return res.status(404).json({ error: "No encontrado" });
   try {
-    const site = process.env.SITE_URL || "https://karenyaldo.com";
+    const site = process.env.SITE_URL || "https://karen-y-aldo.com";
     const imgBuffer = generateInvitation({
       nombre: inv.nombre,
       personas: inv.personas,
@@ -303,7 +333,7 @@ adminRouter.post(
     if (!cfg.enabled) {
       return res.status(400).json({ error: "WhatsApp no configurado" });
     }
-    const site = process.env.SITE_URL || "https://karenyaldo.com";
+    const site = process.env.SITE_URL || "https://karen-y-aldo.com";
     const pendientes = listInvitados().filter((i) => i.estado === "pendiente");
     let sent = 0;
     const errors = [];
@@ -348,7 +378,7 @@ adminRouter.post(
 adminRouter.post("/reminders", async (req, res) => {
   const cfg = getConfig();
   if (!cfg.enabled) return res.status(400).json({ error: "WhatsApp no configurado" });
-  const site = process.env.SITE_URL || "https://karenyaldo.com";
+  const site = process.env.SITE_URL || "https://karen-y-aldo.com";
   const target = listInvitados().filter(
     (i) => ["pendiente", "enviado"].includes(i.estado)
   );
@@ -399,7 +429,7 @@ adminRouter.post("/messages/send/:invitadoId", async (req, res) => {
   const id = Number(req.params.invitadoId);
   const inv = getInvitado(id);
   if (!inv) return res.status(404).json({ error: "Invitado no encontrado" });
-  const site = process.env.SITE_URL || "https://karenyaldo.com";
+  const site = process.env.SITE_URL || "https://karen-y-aldo.com";
   const enlace = `${site}/rsvp?t=${inv.token}`;
   const caption = buildInviteCaption(inv.nombre, inv.personas, enlace);
   const msgId = insertMessage({ to_number: inv.whatsapp, tipo: "image", contenido: caption, template: null, status: "pending", invitado_id: inv.id });
@@ -422,7 +452,7 @@ adminRouter.post("/messages/:id/resend", async (req, res) => {
   if (!msg) return res.status(404).json({ error: "Mensaje no encontrado" });
   const inv = msg.invitado_id ? getInvitado(msg.invitado_id) : null;
   if (!inv) return res.status(404).json({ error: "Invitado asociado no encontrado" });
-  const site = process.env.SITE_URL || "https://karenyaldo.com";
+  const site = process.env.SITE_URL || "https://karen-y-aldo.com";
   const enlace = `${site}/rsvp?t=${inv.token}`;
   const caption = msg.contenido || buildInviteCaption(inv.nombre, inv.personas, enlace);
   const newMsgId = insertMessage({ to_number: inv.whatsapp, tipo: msg.tipo, contenido: caption, template: msg.template, status: "pending", invitado_id: inv.id });

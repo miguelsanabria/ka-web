@@ -107,21 +107,31 @@ export function inviteComponents({ nombre, enlace }) {
   ];
 }
 
+// Comparación en tiempo constante: con `===` un atacante puede adivinar la
+// firma byte a byte midiendo tiempos de respuesta.
+function timingSafeEqualStr(a, b) {
+  const ba = Buffer.from(String(a ?? ""), "utf8");
+  const bb = Buffer.from(String(b ?? ""), "utf8");
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
 export function verifyWebhook(mode, token) {
-  return (
-    mode === "subscribe" &&
-    token === process.env.META_VERIFY_TOKEN
-  );
+  const expected = process.env.META_VERIFY_TOKEN;
+  // Fail-closed: sin token configurado, la verificación nunca pasa. Con `===`
+  // directo, token ausente y META_VERIFY_TOKEN ausente se comparaban como
+  // undefined === undefined y la verificación se aceptaba.
+  if (!expected) return false;
+  return mode === "subscribe" && timingSafeEqualStr(token, expected);
 }
 
 export function verifySignature(req, rawBody) {
   const sig = req.headers["x-hub-signature-256"];
-  if (!sig) return false;
   const secret = process.env.META_APP_SECRET;
-  if (!secret) return false;
+  if (!sig || !secret) return false;
   const expected = `sha256=${crypto
     .createHmac("sha256", secret)
     .update(rawBody)
     .digest("hex")}`;
-  return sig === expected;
+  return timingSafeEqualStr(sig, expected);
 }

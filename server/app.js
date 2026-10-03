@@ -137,8 +137,13 @@ app.use("/api", (req, res) => res.status(404).json({ error: "no encontrado" }));
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(err.status || 500).json({ error: err.message || "error interno" });
+  console.error(`[error] ${req.method} ${req.path}:`, err);
+  const status = err.status || 500;
+  // Los 4xx son errores previstos y su mensaje ayuda al cliente; los 5xx no:
+  // el texto puede traer rutas internas, SQL o detalles de ffmpeg.
+  res
+    .status(status)
+    .json({ error: status < 500 ? err.message || "error" : "error interno" });
 });
 
 const PORT = Number(process.env.PORT || 3000);
